@@ -406,12 +406,18 @@ static void OPM_PhaseCalcFNumBlock(opm_t *chip)
     uint32_t lfo = chip->lfo_pmd ? chip->lfo_pm_lock : 0;
     uint32_t pms = chip->opp ? chip->pg_opp_pms : chip->ch_pms[channel];
     uint32_t dt = chip->opp ? chip->pg_opp_dt2[slot] : chip->sl_dt2[slot];
-    int32_t lfo_pm = OPM_LFOApplyPMS(lfo & 127, pms);
-    uint32_t kcode = OPM_CalcKCode(kcf, lfo_pm, (lfo & 0x80) != 0 && pms != 0 ? 0 : 1, dt);
-    uint32_t fnum = OPM_KCToFNum(kcode);
-    uint32_t kcode_h = kcode >> 8;
-    chip->pg_fnum[slot] = fnum;
-    chip->pg_kcode[slot] = kcode_h;
+    /* These are all inputs to the pure conversion. The two output arrays
+     * have no other writers, so an unchanged key preserves their exact value.
+     * Keep the YM2164 pipeline updates below outside this cache. */
+    uint32_t key = 0x80000000u | kcf | (lfo << 13) | (pms << 21) | (dt << 24);
+    if (chip->pg_pitch_key[slot] != key)
+    {
+        int32_t lfo_pm = OPM_LFOApplyPMS(lfo & 127, pms);
+        uint32_t kcode = OPM_CalcKCode(kcf, lfo_pm, (lfo & 0x80) != 0 && pms != 0 ? 0 : 1, dt);
+        chip->pg_fnum[slot] = OPM_KCToFNum(kcode);
+        chip->pg_kcode[slot] = kcode >> 8;
+        chip->pg_pitch_key[slot] = key;
+    }
 
     if (chip->opp)
     {

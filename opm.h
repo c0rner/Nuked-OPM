@@ -122,6 +122,9 @@ typedef struct {
     // Phase Gen
     uint16_t pg_fnum[32];
     uint8_t pg_kcode[32];
+    /* Memoize the pure pitch conversion per pipeline slot.
+     * Bit 31 marks valid entries; OPM_Reset's memset invalidates all slots. */
+    uint32_t pg_pitch_key[32];
     uint32_t pg_inc[32];
     uint32_t pg_phase[32];
     uint8_t pg_reset[32];
