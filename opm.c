@@ -431,7 +431,6 @@ static void OPM_PhaseCalcFNumBlock(opm_t *chip)
 static void OPM_PhaseCalcIncrement(opm_t *chip)
 {
     uint32_t slot = chip->cycles;
-    uint32_t channel = slot & 7;
     uint32_t dt = chip->sl_dt1[slot];
     uint32_t dt_l = dt & 3;
     uint32_t detune = 0;
@@ -441,6 +440,15 @@ static void OPM_PhaseCalcIncrement(opm_t *chip)
     uint32_t block = kcode >> 2;
     uint32_t basefreq = (fnum << block) >> 2;
     uint32_t note, sum, sum_h, sum_l, inc;
+    /* Full fnum, five-bit key code, three-bit DT1 and four-bit multiplier. */
+    uint32_t key = 0x80000000u | fnum | (kcode << 16) |
+        (dt << 21) | (multi << 24);
+    if (chip->pg_inc_key[slot] == key)
+    {
+        /* Phase generation can clear pg_inc during a key-on reset. */
+        chip->pg_inc[slot] = chip->pg_inc_cached[slot];
+        return;
+    }
     /* Apply detune */
     if (dt_l)
     {
@@ -473,6 +481,8 @@ static void OPM_PhaseCalcIncrement(opm_t *chip)
         inc = basefreq >> 1;
     }
     inc &= 0xfffff;
+    chip->pg_inc_key[slot] = key;
+    chip->pg_inc_cached[slot] = inc;
     chip->pg_inc[slot] = inc;
 }
 

@@ -125,6 +125,10 @@ typedef struct {
     /* Memoize the pure pitch conversion per pipeline slot.
      * Bit 31 marks valid entries; OPM_Reset's memset invalidates all slots. */
     uint32_t pg_pitch_key[32];
+    /* Bit 31 marks valid increment keys; reset invalidates via memset.
+     * Keep cached values separate from the reset-masked pipeline output. */
+    uint32_t pg_inc_key[32];
+    uint32_t pg_inc_cached[32];
     uint32_t pg_inc[32];
     uint32_t pg_phase[32];
     uint8_t pg_reset[32];
