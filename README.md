@@ -16,3 +16,18 @@ cc -std=c99 -O2 -fsanitize=undefined -fno-sanitize-recover=undefined \
   tests/pitch_cache.c -o /tmp/opm-pitch-cache
 /tmp/opm-pitch-cache
 ```
+
+## Phase increment cache
+
+Phase increments are cached per slot using frequency, key code, DT1 and
+multiplier. Cache hits restore the pipeline increment because phase reset can
+clear it independently. Phase accumulation and reset timing still run on every
+clock. This adds another 256 bytes to `opm_t`; rebuild code embedding it.
+
+Run the arithmetic and per-clock state regression for both chip variants with:
+
+```sh
+cc -std=c99 -O2 -fsanitize=undefined -fno-sanitize-recover=undefined \
+  tests/phase_increment_cache.c -o /tmp/opm-phase-increment-cache
+/tmp/opm-phase-increment-cache
+```

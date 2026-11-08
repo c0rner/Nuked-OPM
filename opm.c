@@ -431,7 +431,6 @@ static void OPM_PhaseCalcFNumBlock(opm_t *chip)
 static void OPM_PhaseCalcIncrement(opm_t *chip)
 {
     uint32_t slot = chip->cycles;
-    uint32_t channel = slot & 7;
     uint32_t dt = chip->sl_dt1[slot];
     uint32_t dt_l = dt & 3;
     uint32_t detune = 0;
@@ -441,6 +440,15 @@ static void OPM_PhaseCalcIncrement(opm_t *chip)
     uint32_t block = kcode >> 2;
     uint32_t basefreq = (fnum << block) >> 2;
     uint32_t note, sum, sum_h, sum_l, inc;
+    /* Full fnum, five-bit key code, three-bit DT1 and four-bit multiplier. */
+    uint32_t key = 0x80000000u | fnum | (kcode << 16) |
+        (dt << 21) | (multi << 24);
+    if (chip->pg_inc_key[slot] == key)
+    {
+        /* Phase generation can clear pg_inc during a key-on reset. */
+        chip->pg_inc[slot] = chip->pg_inc_cached[slot];
+        return;
+    }
     /* Apply detune */
     if (dt_l)
     {
@@ -473,6 +481,8 @@ static void OPM_PhaseCalcIncrement(opm_t *chip)
         inc = basefreq >> 1;
     }
     inc &= 0xfffff;
+    chip->pg_inc_key[slot] = key;
+    chip->pg_inc_cached[slot] = inc;
     chip->pg_inc[slot] = inc;
 }
 
@@ -1454,30 +1464,9 @@ static void OPM_DoLFOMult(opm_t *chip)
 
     chip->lfo_out2_b = chip->lfo_out2;
 
-    switch (chip->lfo_bit_counter & 7)
-    {
-    case 0:
-        bit = (dp & 64) != 0 && (chip->lfo_out1 & 64) != 0;
-        break;
-    case 1:
-        bit = (dp & 32) != 0 && (chip->lfo_out1 & 32) != 0;
-        break;
-    case 2:
-        bit = (dp & 16) != 0 && (chip->lfo_out1 & 16) != 0;
-        break;
-    case 3:
-        bit = (dp & 8) != 0 && (chip->lfo_out1 & 8) != 0;
-        break;
-    case 4:
-        bit = (dp & 4) != 0 && (chip->lfo_out1 & 4) != 0;
-        break;
-    case 5:
-        bit = (dp & 2) != 0 && (chip->lfo_out1 & 2) != 0;
-        break;
-    case 6:
-        bit = (dp & 1) != 0 && (chip->lfo_out1 & 1) != 0;
-        break;
-    }
+    /* Select bits 6 through 0; the eighth serial step contributes zero. */
+    bit = ((dp & chip->lfo_out1) &
+        (0x80u >> ((chip->lfo_bit_counter & 7) + 1))) != 0;
 
     b1 = (chip->lfo_out2 & 1) != 0;
     if ((chip->lfo_bit_counter & 7) == 0)
