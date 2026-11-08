@@ -48,8 +48,8 @@ static void check_pitch_cache(void)
         }
         OPM_Reset(&chip, opp ? opm_flags_ym2164 : opm_flags_none);
         for (uint32_t slot = 0; slot < 32; slot++)
-            assert(chip.wpc_pitch_key[slot] == 0 ||
-                   chip.wpc_pitch_key[slot] == 0x80000000u);
+            assert(chip.pg_pitch_key[slot] == 0 ||
+                   chip.pg_pitch_key[slot] == 0x80000000u);
         /* Reset clocks the core while IC is active, so zero-input cache
          * entries may already be valid when it returns. */
     }
