@@ -31,3 +31,24 @@ cc -std=c99 -O2 -fsanitize=undefined -fno-sanitize-recover=undefined \
   tests/phase_increment_cache.c -o /tmp/opm-phase-increment-cache
 /tmp/opm-phase-increment-cache
 ```
+
+## KC-to-frequency table
+
+Pitch-cache misses use a 1,024-entry `uint16_t` table generated from the original
+ROM parameters and arithmetic, preserving all rounding and low-10-bit indexing.
+The table uses 2 KiB shared across chips and adds no per-chip state.
+
+Validate all 8,192 pitch codes against the original calculation:
+
+```sh
+cc -std=c99 -O2 -fsanitize=undefined -fno-sanitize-recover=undefined \
+  tests/kc_frequency_table.c -o /tmp/opm-kc-frequency-table
+/tmp/opm-kc-frequency-table
+```
+
+To regenerate the initializer in `opm.c`:
+
+```sh
+cc -std=c99 -O2 -DGENERATE_TABLE tests/kc_frequency_table.c -o /tmp/opm-generate-kc
+/tmp/opm-generate-kc
+```
