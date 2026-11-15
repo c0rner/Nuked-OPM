@@ -1454,30 +1454,9 @@ static void OPM_DoLFOMult(opm_t *chip)
 
     chip->lfo_out2_b = chip->lfo_out2;
 
-    switch (chip->lfo_bit_counter & 7)
-    {
-    case 0:
-        bit = (dp & 64) != 0 && (chip->lfo_out1 & 64) != 0;
-        break;
-    case 1:
-        bit = (dp & 32) != 0 && (chip->lfo_out1 & 32) != 0;
-        break;
-    case 2:
-        bit = (dp & 16) != 0 && (chip->lfo_out1 & 16) != 0;
-        break;
-    case 3:
-        bit = (dp & 8) != 0 && (chip->lfo_out1 & 8) != 0;
-        break;
-    case 4:
-        bit = (dp & 4) != 0 && (chip->lfo_out1 & 4) != 0;
-        break;
-    case 5:
-        bit = (dp & 2) != 0 && (chip->lfo_out1 & 2) != 0;
-        break;
-    case 6:
-        bit = (dp & 1) != 0 && (chip->lfo_out1 & 1) != 0;
-        break;
-    }
+    /* Select bits 6 through 0; the eighth serial step contributes zero. */
+    bit = ((dp & chip->lfo_out1) &
+        (0x80u >> ((chip->lfo_bit_counter & 7) + 1))) != 0;
 
     b1 = (chip->lfo_out2 & 1) != 0;
     if ((chip->lfo_bit_counter & 7) == 0)
